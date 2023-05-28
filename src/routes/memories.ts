@@ -17,11 +17,12 @@ export async function memoriesRoutes(app: FastifyInstance) {
       },
     });
 
-    return memories.map(({ id, coverUrl, content }) => {
+    return memories.map((memory) => {
       return {
-        id,
-        coverUrl,
-        excerpt: content.substring(0, 115).concat("..."),
+        id: memory.id,
+        coverUrl: memory.coverUrl,
+        excerpt: memory.content.substring(0, 115).concat("..."),
+        createdAt: memory.createdAt,
       };
     });
   });
@@ -39,7 +40,9 @@ export async function memoriesRoutes(app: FastifyInstance) {
       },
     });
 
-    if (!memory.isPublic && memory.userId !== request.user.sub) return reply.status(401).send();
+    if (!memory.isPublic && memory.userId !== request.user.sub) {
+      return reply.status(401).send();
+    }
 
     return memory;
   });
@@ -81,10 +84,14 @@ export async function memoriesRoutes(app: FastifyInstance) {
     const { content, coverUrl, isPublic } = bodySchema.parse(request.body);
 
     let memory = await prisma.memory.findUniqueOrThrow({
-      where: { id },
+      where: {
+        id,
+      },
     });
 
-    if (memory.userId != request.user.sub) return reply.status(401).send();
+    if (memory.userId !== request.user.sub) {
+      return reply.status(401).send();
+    }
 
     memory = await prisma.memory.update({
       where: {
@@ -107,18 +114,20 @@ export async function memoriesRoutes(app: FastifyInstance) {
 
     const { id } = paramsSchema.parse(request.params);
 
-    let memory = await prisma.memory.findUniqueOrThrow({
-      where: { id },
+    const memory = await prisma.memory.findUniqueOrThrow({
+      where: {
+        id,
+      },
     });
 
-    if (memory.userId != request.user.sub) return reply.status(401).send();
-
-    if (memory) {
-      await prisma.memory.delete({
-        where: {
-          id,
-        },
-      });
+    if (memory.userId !== request.user.sub) {
+      return reply.status(401).send();
     }
+
+    await prisma.memory.delete({
+      where: {
+        id,
+      },
+    });
   });
 }
